@@ -2,7 +2,7 @@
 
 #==========================================================================================================
 #	Script name: 	listGitLabRepository.sh
-#	Description: 	This script will list all the repositories under your GitLab account.
+#	Description: 	This script will iterates through GitLab subgroups and list all the repositories.
 #
 #
 #	Developed by:	Renjith (sa.renjith@gmail.com)
@@ -14,19 +14,98 @@
 #					jq CLI
 #
 #	Script input:	None
-#	Script output:	create repos.json (serve a cache) and print your repository url and project anme.
+#	Script output:	Displays your repository url and the project anme.
 #	
 #==========================================================================================================
 
-GITLAB_URL="https://gitlab.com"
+GITLAB_URL="https://YOUR_GITLAB_URL_HERE"
 GITLAB_USER="sa.renjith"
 GITLAB_TOKEN="YOUR_GITLAB_TOKEN_HERE"
 
-GITLAB_API="$GITLAB_URL/api/v4/users/$GITLAB_USER/projects"
-OUTPUT_FILE="repos.json"
+GROUP_PATH="YOUR_GITLAB_GROUP_NAME_HERE"
 
-#fetch repo from GitHub
-curl -s --header "PRIVATE-TOKEN:$GITLAB_TOKEN" "$GITLAB_API" > "$OUTPUT_FILE"
+FETCH_FROM_USER=false
 
-#parse and fetch from cache
-cat "$OUTPUT_FILE" | jq -r '.[] | "\(.web_url)          \(.name)"'
+###########################################################################################################
+## fetch projects from user account
+#==========================================================================================================
+get_useraccount_projects() {
+	echo "fetching repo from GitHub user account"
+	
+	local gitlab_api="$GITLAB_URL/api/v4/users/$GITLAB_USER/projects"
+	
+	response=$(curl -s --header "PRIVATE-TOKEN:$GITLAB_TOKEN" "$gitlab_api")
+	echo "$response" | jq -r '.[] | "\(.web_url)          \(.name)"'
+	
+	exit 1
+}
+
+
+
+###########################################################################################################
+## fetch projects from a gitlab group profile
+#==========================================================================================================
+echo "fetching repo from GitHub group profile"
+
+#fetch all projects in a given Group ID
+get_projects_from_group_profile() {
+    local group_id=$1
+    local page=1
+	
+	# GitLab API URL to fetch projects of the group (including subgroups)
+    GITLAB_API="$GITLAB_URL/api/v4/groups/$group_id/projects?include_subgroups=true&per_page=100"
+
+    while true; do
+        # Make the API request
+        response=$(curl --silent --header "PRIVATE-TOKEN: $GITLAB_TOKEN" "$GITLAB_API&page=$page")
+
+        # Break if no more projects are found
+        if [[ -z "$response" || $(jq length <<< "$response") -eq 0 ]]; then
+			echo "Done listing with $group_id."
+            break
+        fi
+
+        # Extract and print the project name and URL (using jq)
+        echo "$response" | jq -r '.[] | "\(.http_url_to_repo) \(.name)"'
+
+        # Move to the next page
+        ((page++))
+    done
+}
+
+
+
+##########################################################################################################
+## main
+#==========================================================================================================
+if $FETCH_FROM_USER; then
+	get_useraccount_projects
+else
+	########################################################################################
+	#######GROUP_IDS=("3813" "10787" "76360" "53899" "8796" "4461" "6685" "7929" "76363")
+	#######for group_id in "${GROUP_IDS[@]}"; do
+	#######	get_projects_from_group_profile "$group_id"
+	#######done
+	#########################################################################################
+	
+	
+	# Step 1: Get Parent Group ID
+	ROOT_GROUP_ID=$(curl --silent --header "PRIVATE-TOKEN: $GITLAB_TOKEN" "$GITLAB_URL/api/v4/groups?search=$GROUP_PATH" | \
+    jq -r ".[] | select(.full_path==\"$GROUP_PATH\") | .id")
+	
+	if [[ -z "$ROOT_GROUP_ID" ]]; then
+		echo "Error: Group '$GROUP_PATH' not found!"
+		exit 1
+	fi
+	
+	echo "Group id is: $ROOT_GROUP_ID"
+
+	# Step 2: Fetch Projects from the root (also recursively fetch subgroups and their projects)
+	echo "Fetching projects from the root group: $GROUP_PATH"
+	get_projects_from_group_profile "$ROOT_GROUP_ID"
+fi
+
+
+
+
+
