@@ -14,14 +14,40 @@
 #					Access to Git repository
 #					List of local Git repositries that needs to be pushed to remote.
 #
-#	Script input:	None|repository name will be read from REPO_LIST_FILE variable.
+#	Script input:	tokens.conf: Token will be read from this file.
+#			local_repo_list.txt: Repository name will be read from this file.
 #	Script output:	A remote Git repository with the data that is in local repository.
 #	
 #==========================================================================================================
 
+
+##NOTE:-----------------------------------------------------------------------------------------------------
+##Ensure you have tokens.conf in your current directory and having soemthing like GITLAB_TOKEN=<your Gitlab_token>
+#####Example:
+######### GITLAB_TOKEN_0x218="glpat-JDFL-eDdjgdPrdaMerx4Xhfz2T8w"
+######### GITHUB_TOKEN_0x218="github_pat_13245jadsfYlager_Vasefadfglkagadg-a34k3gJ4QDrDagadgl23AS"
+
+source "./tokens.conf" ##now all the rows are stored in source.
+
+GITHUB_TOKEN_VAR="GITHUB_TOKEN_0x218"   ##GITLAB_TOKEN_VAR stores string "GITHUB_TOKEN_0x218"
+
+GITHUB_TOKEN="${!GITHUB_TOKEN_VAR}" #indirect refence; get teh value of GITLAB_TOKEN_SARENJITH_GMAIL from tokens.conf
+
+if [[ -z "$GITHUB_TOKEN" ]]; then
+	echo "Error: Token is not set in tokens.conf.  Exiting"
+	exit 1
+fi
+
+#echo "GitLab token: $GITLAB_TOKEN"
+#echo "GitHub token: $GITHUB_TOKEN"
+##---------------------------------------------------------------------------------------------------------
+
+
+
 GITHUB_USER="sa.renjith@gmail.com"
-GITHUB_ORG="REPLACE_WITH_YOUR_ORGANIZATION_NAME"   # put "" if creating under your personal account
-GITHUB_TOKEN="github_pat_REPLACE_WITH_YOUR_PERSONAL_ACCESS_TOKEN"
+
+# REPLACE GITHHUB_ORG with your organization name.  Put "" if creating under your personal account
+GITHUB_ORG="MyTest1Org"
 
 # GitHub API URL
 GITHUB_API_URL="https://api.github.com"

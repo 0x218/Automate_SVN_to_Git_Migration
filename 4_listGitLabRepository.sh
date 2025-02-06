@@ -18,11 +18,33 @@
 #	
 #==========================================================================================================
 
-GITLAB_URL="https://YOUR_GITLAB_URL_HERE"
-GITLAB_USER="sa.renjith"
-GITLAB_TOKEN="YOUR_GITLAB_TOKEN_HERE"
 
-GROUP_PATH="YOUR_GITLAB_GROUP_NAME_HERE"
+##NOTE:-----------------------------------------------------------------------------------------------------
+##Ensure you have tokens.conf in your current directory and having soemthing like GITLAB_TOKEN=<your Gitlab_token>
+#####Example:
+######### GITLAB_TOKEN_Ox218="glpat-JDFL-eDdjgdPrdaMerx4Xhfz2T8w"
+
+source "./tokens.conf" ##now all the rows are stored in source.
+
+GITLAB_TOKEN_VAR="GITLAB_TOKEN_Ox218"   ##GITLAB_TOKEN_VAR stores string "GITLAB_TOKEN_Ox218"
+
+GITLAB_TOKEN="${!GITLAB_TOKEN_VAR}" #indirect refence; get teh value of GITLAB_TOKEN_SARENJITH_GMAIL from tokens.conf
+
+if [[ -z "$GITLAB_TOKEN" ]]; then
+	echo "Error: Token is not set in tokens.conf.  Exiting"
+	exit 1
+fi
+
+#echo "GitLab token: $GITLAB_TOKEN"
+#echo "GitHub token: $GITHUB_TOKEN"
+##---------------------------------------------------------------------------------------------------------
+
+
+
+GITLAB_URL="https://gitlab.com/"
+GITLAB_USER="sa.renjith"
+
+GROUP_PATH="retail"
 
 FETCH_FROM_USER=false
 

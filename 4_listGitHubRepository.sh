@@ -19,7 +19,7 @@
 #==========================================================================================================
 
 GITHUB_USERNAME="0x218"
-GITHUB_TOKEN=""
+GITHUB_TOKEN="ENTER_YOUR_TOKEN_HERE"
 GITHUB_API="https://api.github.com/user/repos"
 OUTPUT_FILE="repos.json"
 

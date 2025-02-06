@@ -14,15 +14,37 @@
 #					Access to Git repository
 #					List of local Git repositries that needs to be pushed to remote.
 #
-#	Script input:	None|repository name will be read from REPO_LIST_FILE variable.
+#	Script input:	tokens.conf: Token will be read from this file.
+#			local_repo_list.txt: Repository name will be read from this file.
 #	Script output:	A remote Git repository with the data that is in local repository.
 #	
 #==========================================================================================================
 
-GITLAB_URL="https://REPLACE_THIS_WITH_YOUR_GITLAB_URL"
+
+##NOTE:-----------------------------------------------------------------------------------------------------
+##Ensure you have tokens.conf in your current directory and having soemthing like GITLAB_TOKEN=<your Gitlab_token>
+#####Example:
+######### GITHUB_TOKEN_Ox218="github_pat_13245jadsfYlager_Vasefadfglkagadg-a34k3gJ4QDrDagadgl23AS"
+
+source "./tokens.conf" ##now all the rows are stored in source.
+
+GITLAB_TOKEN_VAR="GITHUB_TOKEN_Ox218"   ##GITLAB_TOKEN_VAR stores string "GITHUB_TOKEN_Ox218"
+
+GITLAB_TOKEN="${!GITLAB_TOKEN_VAR}" #indirect refence; get teh value of GITHUB_TOKEN_Ox218 from tokens.conf
+
+if [[ -z "$GITLAB_TOKEN" ]]; then
+	echo "Error: Token is not set in tokens.conf.  Exiting"
+	exit 1
+fi
+
+#echo "GitLab token: $GITLAB_TOKEN"
+#echo "GitHub token: $GITHUB_TOKEN"
+##---------------------------------------------------------------------------------------------------------
+
+GITLAB_URL="https://gitlab.com/"
 GITLAB_USER="sa.renjith@gmail.com"
-ACCESS_TOKEN="glpat-pat_RELACE_WITH_YOUR_PERSONAL_ACCESS_TOKEN"
-GROUP_PATH="REPLACE_THIS_WITH_YOUR_GIT_PATH_WHERE_YOU_WILL_PUSH_THE_CODE_TO"
+
+GROUP_PATH="retail/clients"
 VISIBILITY="private" #can be public or internal.
 DEFAULT_BRANCH="main"
 
@@ -44,21 +66,19 @@ while IFS= read -r local_repo_folder; do
 	LOCAL_REPO_PATH="$local_repo_folder"
 	DESCRIPTION="Replacement project created svn repo: $local_repo_folder"
 
-
 	#get namespace id for the subgroup
 	echo  "Fetching namespace id for $GROUP_PATH"
 
-	NAMESPACE_ID=$(curl -s --header "PRIVATE-TOKEN: $ACCESS_TOKEN" "$GITLAB_URL/api/v4/groups?search=$(basename $GROUP_PATH)" | jq ".[] | select(.full_path==\"$GROUP_PATH\") | .id")
+	NAMESPACE_ID=$(curl -s --header "PRIVATE-TOKEN: $GITLAB_TOKEN" "$GITLAB_URL/api/v4/groups?search=$(basename $GROUP_PATH)" | jq ".[] | select(.full_path==\"$GROUP_PATH\") | .id")
 	if [ -z "$NAMESPACE_ID" ]; then
 		echo "Error: namespace id not found for $GROUP_PATH.  Exiting."
 		exit 1
 	fi
-	echo "Namespace id: $NAMESPACE_ID"
-
+	#echo "Namespace id: $NAMESPACE_ID"
 
 	#create repo.
 	echo "Creating remote repository $PROJECT_NAME"
-	PROJECT_RESPONSE=$(curl -s --request POST --header "PRIVATE-TOKEN: $ACCESS_TOKEN"\
+	PROJECT_RESPONSE=$(curl -s --request POST --header "PRIVATE-TOKEN: $GITLAB_TOKEN"\
 		--data "name=$PROJECT_NAME&namespace_id=$NAMESPACE_ID&visibility=$VISIBILITY"\
 		"$GITLAB_URL/api/v4/projects")
 
@@ -77,8 +97,8 @@ while IFS= read -r local_repo_folder; do
 	#echo "press enter key to continue..."
 	#read -n 1 -s -r #wait for a keypress
 
-	##Unproject the branch
-	#curl -s --request DELETE --header "PRIVATE-TOKEN: $ACCESS_TOKEN" \
+	##Unprotect the branch
+	#curl -s --request DELETE --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
 	#	"$GITLAB_URL/api/v4/projects/$REMOTE_PROJECT_ID/protected_branches/$DEFAULT_BRANCH"
 	
 	#echo "Branch '$DEFAULT_BRANCH' is unprotected"
