@@ -2,13 +2,13 @@
 ##WIP
 #==========================================================================================================
 #	Script name: 	push_to_remote_github.sh
-#	Description: 	This script creates a git repository in the remote server, and push the local repository
-#					into the remote server.
+#	Description: 	This script creates a remote git repository and push the local repository into the
+#					 remote repository.
 #
 #
 #	Developed by:	Renjith (sa.renjith@gmail.com)
 #	
-#	Usage:			./push_to_remote_git.sh
+#	Usage:			./push_to_remote_github.sh
 #	Prerequisites:	
 #					Git command line tool installed
 #					Access to Git repository

@@ -2,7 +2,7 @@
 
 #==========================================================================================================
 #	Script name: 	git_svn_fetch.sh
-#	Description: 	This script migrates an SVN repository to a local Git repository, preserving histry for
+#	Description: 	This script migrates an SVN repository to a local Git repository, preserving history for
 #					standard layouts.
 #
 #

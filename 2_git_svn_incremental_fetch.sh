@@ -2,8 +2,10 @@
 
 #==========================================================================================================
 #	Script name: 	git_svn_incremental_fetch.sh
-#	Description: 	This script migrates an SVN repository to a local Git repository, preserving histry for
-#					standard layouts.
+#	Description: 	This script migrates an SVN repository to a local Git repository, preserving history for
+#					standard layouts.  This script follows a stage by stage migration - which makes it ideal 
+#					to migrate extremely large SVN projects.  Instead of cloning everything together, it clones -
+#					revision to revision.
 #
 #
 #	Developed by:	Renjith (sa.renjith@gmail.com)

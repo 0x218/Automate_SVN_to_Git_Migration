@@ -1,13 +1,14 @@
 #!/bin/bash
 
 #==========================================================================================================
-#	Script name: 	migrate_mirrored_GitLab2GitHub.sh
-#	Description: 	This script creates GitHub repository from the mirror of GitLab repository.
+#	Script name: 	migrate_GitLab_to_GitHub.sh
+#	Description: 	This script creates GitHub repository from the mirror and then convert
+#			 		the mirror repo into normal repo and finally push it into remote GitHub server.
 #
 #
 #	Developed by:	Renjith (sa.renjith@gmail.com)
 #	
-#	Usage:			./migrate_mirrored_GitLab2GitHub.sh
+#	Usage:			./migrate_GitLab_to_GitHub.sh
 #	Prerequisites:	
 #					Git command line tool installed
 #					Access to GitHub and GitLab
@@ -27,9 +28,9 @@
 source "./tokens.conf" ##now all the rows are stored in source.
 
 #GITLAB_TOKEN_VAR="GITLAB_TOKEN_0x218"   ##GITLAB_TOKEN_VAR stores string "GITLAB_TOKEN_0x218"
-GITHUB_TOKEN_VAR="GITHUB_TOKEN_0x218_MYORG1"  ##You need the token generated from GitHub-Organization
+GITHUB_TOKEN_VAR="GITHUB_TOKEN_0x218_MYORG1" 
 
-#GITLAB_TOKEN="${!GITLAB_TOKEN_VAR}" #indirect refence; get the value of GITLAB_TOKEN_0x218 from tokens.conf
+#GITLAB_TOKEN="${!GITLAB_TOKEN_VAR}" #indirect refence; get teh value of GITLAB_TOKEN_SARENJITH_GMAIL from tokens.conf
 GITHUB_TOKEN="${!GITHUB_TOKEN_VAR}"
 
 if [[ -z "$GITHUB_TOKEN" ]]; then
@@ -47,17 +48,35 @@ PROJECT_NAME=$(basename "$GITLAB_URL")
 GITLAB_REPO="https://gitlab.com/sa.renjith/${PROJECT_NAME}.git"
 
 GITHUB_ORG="MyTest1Org"
+
 GITHUB_API="https://api.github.com/orgs/${GITHUB_ORG}/repos"
 GITHUB_URL="https://github.com/${GITHUB_ORG}/${PROJECT_NAME}.git"
 GITHUB_URL_WITH_TOKEN="https://$GITHUB_TOKEN@github.com/${GITHUB_ORG}/${PROJECT_NAME}.git"
 
+echo "URL with token: $GITHUB_URL_WITH_TOKEN"
+
 #echo "GitHub URL: $GITHUB_URL"
 #echo "GitHub API: $GITHUB_API"
 #echo "GitHub with token $GITHUB_URL_WITH_TOKEN"
+#echo "Cloning Gitlab repo (mirror/ bare repo)"
 
 echo "Cloning Gitlab repo (mirror/ bare repo)"
 git clone --mirror "$GITLAB_REPO"
-cd "${PROJECT_NAME}.git" || exit 1
+cd "${PROJECT_NAME}.git" || { echo "Failed to enter mirror repo directory"; exit 1; }
+cd ..
+#echo "Current working directory: $(pwd)"
+
+echo "Creating normal repo from bare repo"
+git clone "${PROJECT_NAME}.git" "${PROJECT_NAME}_normal"
+cd "${PROJECT_NAME}_normal" || { echo "Failed to enter non-mirror repo directory"; exit 1; }
+git fetch --all --prune #fetch all brnaches.
+
+echo "Converting cloned repo's remote branches to local...."
+git branch -D -r origin/main ##delete origin/remote/main (it's duplicate)
+for br in $(git branch -r | sed 's/origin\///'); do
+    git branch $br origin/$br
+	git branch -D -r origin/$br
+done
 
 echo "Create GitHub remote project"
 CREATE_REPO_RESPONSE=$(curl -s -H "Authorization: token $GITHUB_TOKEN" -H "Accept: application/vnd.github.v3+json" -d "{\"name\": \"$PROJECT_NAME\", \"private\": true}" "$GITHUB_API")
@@ -73,15 +92,41 @@ fi
 echo "Remove gitlab remote reference"
 git remote remove origin
 
+echo "Creating yaml file in main branch"
+git checkout main
+
+cat <<EOL > testConf.yaml
+version:1
+account:
+    -id: App1234
+    -oId: oc354
+component:code
+EOL
+
+echo "Committing the yaml file"
+git add testConf.yaml
+git commit -m "Created testConf.yaml file"
+
 # Add GitHub as a remote repository
 echo "Link GitHub remote repository to origin"
-git remote add github "$GITHUB_URL_WITH_TOKEN"
+git remote add origin "$GITHUB_URL_WITH_TOKEN"
+#git remote add origin "$GITHUB_URL"
+
+echo "Checkout all branches and setup tracking...."
+for branch in $(git branch -r | grep -v 'HEAD' | sed 's/origin\///'); do
+    git checkout -B "$branch" "origin/$branch"
+    git branch --set-upstream-to="origin/$branch" "$branch"
+	echo "Constructed branch $branch ..."
+done
+
 
 echo "Push all branches and tags to GitHub"
-git push --mirror github
+#git push origin main --force
+git push --all origin
+git push --tags origin
 
 # Cleanup
-cd ..
-#rm -rf "${PROJECT_NAME}.git"
+#cd ..
+rm -rf "${PROJECT_NAME}.git"
 echo "Migration completed successfully!"
 
