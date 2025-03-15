@@ -22,11 +22,12 @@
 ##NOTE:-----------------------------------------------------------------------------------------------------
 ##Ensure you have tokens.conf in your current directory and having soemthing like GITLAB_TOKEN=<your Gitlab_token>
 #####Example:
-######### GITLAB_TOKEN_Ox218="glpat-JDFL-eDdjgdPrdaMerx4Xhfz2T8w"
+######### GITLAB_TOKEN_SARENJITH_GMAIL="glpat-JDFL-eDdjgdPrdaMerx4Xhfz2T8w"
+######### GITHUB_TOKEN_SARENJITH_GMAIL="github_pat_13245jadsfYlager_Vasefadfglkagadg-a34k3gJ4QDrDagadgl23AS"
 
 source "./tokens.conf" ##now all the rows are stored in source.
 
-GITLAB_TOKEN_VAR="GITLAB_TOKEN_Ox218"   ##GITLAB_TOKEN_VAR stores string "GITLAB_TOKEN_Ox218"
+GITLAB_TOKEN_VAR="GITLAB_TOKEN_SARENJITH_GMAIL"   ##GITLAB_TOKEN_VAR stores string "GITLAB_TOKEN_SARENJITH_GMAIL"
 
 GITLAB_TOKEN="${!GITLAB_TOKEN_VAR}" #indirect refence; get teh value of GITLAB_TOKEN_SARENJITH_GMAIL from tokens.conf
 
@@ -41,10 +42,10 @@ fi
 
 
 
-GITLAB_URL="https://gitlab.com/"
+GITLAB_URL="https://YOUR-GITLAB-SERVER"
 GITLAB_USER="sa.renjith"
 
-GROUP_PATH="retail"
+GROUP_PATH="Deep1Seek"
 
 FETCH_FROM_USER=false
 

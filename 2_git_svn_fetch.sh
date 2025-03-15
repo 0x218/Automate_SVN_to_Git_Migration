@@ -2,7 +2,7 @@
 
 #==========================================================================================================
 #	Script name: 	git_svn_fetch.sh
-#	Description: 	This script migrates an SVN repository to a local Git repository, preserving history for
+#	Description: 	This script migrates an SVN repository to a local Git repository, preserving histry for
 #					standard layouts.
 #
 #
@@ -20,7 +20,7 @@
 #				5)	SVN URL
 #				6)	List of SVN folders that needs to be migrated (in svn_project_folder_List.txt)
 #				7)	svn_committerList.txt file composed of SVN autors, in the format: 
-#						username=username	<username@mailserver.com>
+#						username=username	<username@email-domain.com>
 #						Example:
 #						sa.renjith=sa.renjith	<sa.renjith@gmail.com>
 #					Note:You can geneate the list using: svn log YOUR_SVN_URL --quiet | grep -E '^r[0-9]+' | awk '{print #3}' | sort | uniq > svn_committerList.txt 
@@ -31,8 +31,8 @@
 #==========================================================================================================
 
 FOLDER_LIST="folderList.txt"
-SVN_HOST_URL="https://localhost.com/mysvnrepo"
-SVN_PATH_URL="retail/clients"
+SVN_HOST_URL="https://YOUR-SVN-SERVER/YOUR-APPLICATION"
+SVN_PATH_URL="PATH/To/SVN/REPOSITORY"
 SVN_BASE_URL="${SVN_HOST_URL}/${SVN_PATH_URL}"
 AUTHORS_FILE="../commiterList.txt"
 
@@ -40,6 +40,40 @@ AUTHORS_FILE="../commiterList.txt"
 HAS_CUSTOM_TAGS=false
 CUSTOM_TAG1=false  #add as many CUSTOM_TAGx you have in your repository and write you own CUSTOM_TAG handler by referring CUSTOM_TAG1 code 
 
+# GitHub file size limit is 100MB. Use Git LFS if it exceeds.
+FILE_SIZE_LIMIT="100M"
+
+handle_largefiles(){
+	echo "Searching for files larger than ${FILE_SIZE_LIMIT}..."
+	large_files=$(find . -type f -size +"${FILE_SIZE_LIMIT}" -print | sed 's|^\./||' | sort | uniq)
+	
+	if [[ -n "$large_files" ]]; then
+		echo "Initiliziing Git LFS"
+		git lfs install > /dev/null 
+
+		echo "Following files exceed ${FILE_SIZE_LIMIT} and will be migrated to Git LFS:"
+		echo "$large_files"
+		echo
+
+		# Track each large file with Git LFS.
+		while IFS= read -r file; do
+			git lfs track "$file"
+			echo "LFS tracked: $file"
+		done <<< "$large_files"
+
+		# Add .gitattributes file changes to Git.
+		git add .gitattributes
+		git commit -m "Moved large files to Git LFS"
+
+		echo "Rewriting Git history to convert large files to Git LFS..."
+		# Prepare a comma-separated list of file paths for git lfs migrate.
+		include_list=$(echo "$large_files" | paste -sd, -)
+		git lfs migrate import --include="$include_list" --everything
+	else
+		echo "No large files found."
+	fi
+	
+}
 
 if [[ ! -f $FOLDER_LIST ]]; then
 	echo "Error: File $FOLDER_LIST not found!"
@@ -100,19 +134,32 @@ while IFS= read -r FOLDER_NAME || [[ -n "$FOLDER_NAME" ]]; do
 	
 	echo "Retreiving revision number"
 	FIRST_REVISION=$(svn log --stop-on-copy "$SVN_URL" | grep -E '^r[0-9]+' | tail -1 | awk '{print $1}' | sed 's/r//')
-	#FINAL_REVISION=$(svn info $SVN_URL | grep "Revision" | awk '{print $2}')
+	FINAL_REVISION=$(svn info $SVN_URL | grep "Revision" | awk '{print $2}')
 	
+	CHECKPOINT1=$FIRST_REVISION
+	#CHECKPOINT1=300000
+	CHUNK_SIZE=10000
 	
-	echo "Fecthing SVN data for ${FOLDER_NAME} from revision# ${FIRST_REVISION}"
 	###NOTE: CLONE = git svn init AND git svn fetch.  
 	###EXAMPLE: git svn clone "$SVN_URL" --trunk=trunk --branches=branches/* --tags=tags/* -A authors.txt -r 330000:HEAD .
-	git svn fetch -r "$FIRST_REVISION":HEAD > /dev/null || 
-	{ 
-		echo "Error: git svn failed for `$FOLDER_NAME`."; 
-		cd ..; 
-		continue; 
-	} 
 	
+	while [ "$CHECKPOINT1" -lt "$FINAL_REVISION" ]; do
+		CHECKPOINT2=$((CHECKPOINT1 + CHUNK_SIZE))
+		
+		if [ "$CHECKPOINT2" -gt "$FINAL_REVISION" ]; then
+			CHECKPOINT2=$FINAL_REVISION
+		fi
+		
+		echo "Fecthing data for ${FOLDER_NAME} from rev ${CHECKPOINT1} to ${CHECKPOINT2}"
+		git svn fetch -r "$CHECKPOINT1":"$CHECKPOINT2" > /dev/null || 
+		{ 
+			echo "Error: git svn failed for $FOLDER_NAME."; 
+			cd ..; 
+			continue; 
+		}
+		CHECKPOINT1=$(($CHECKPOINT2 + 1))
+	done
+		
 	echo "Converting tags to git tags"
 	for t in `git branch -a | grep 'tags/' | sed s_remotes/origin/tags/__`; do 
 		git tag $t origin/tags/$t
@@ -141,6 +188,8 @@ while IFS= read -r FOLDER_NAME || [[ -n "$FOLDER_NAME" ]]; do
 	echo "Cleaning up"
 	#delete the trunk branch as it is already copied into master
 	git branch -d trunk
+	
+	handle_large_files
 	
 	git config --remove-section svn-remote.svn
 	git config --remove-section svn

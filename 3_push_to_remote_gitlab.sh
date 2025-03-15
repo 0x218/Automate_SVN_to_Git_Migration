@@ -2,20 +2,20 @@
 
 #==========================================================================================================
 #	Script name: 	push_to_remote_gitlab.sh
-#	Description: 	This script creates a remote git repository and push the local repository into the
-#					 remote repository.
+#	Description: 	This script creates a git repository in the remote server, and push the local repository
+#					into the remote server.
 #
 #
 #	Developed by:	Renjith (sa.renjith@gmail.com)
 #	
-#	Usage:			./push_to_remote_gitlab.sh
+#	Usage:			./push_to_remote_git.sh
 #	Prerequisites:	
 #					Git command line tool installed
 #					Access to Git repository
 #					List of local Git repositries that needs to be pushed to remote.
 #
 #	Script input:	tokens.conf: Token will be read from this file.
-#			local_repo_list.txt: Repository name will be read from this file.
+#			folderList.txt: Repository name will be read from this file.
 #	Script output:	A remote Git repository with the data that is in local repository.
 #	
 #==========================================================================================================
@@ -24,13 +24,14 @@
 ##NOTE:-----------------------------------------------------------------------------------------------------
 ##Ensure you have tokens.conf in your current directory and having soemthing like GITLAB_TOKEN=<your Gitlab_token>
 #####Example:
-######### GITHUB_TOKEN_Ox218="github_pat_13245jadsfYlager_Vasefadfglkagadg-a34k3gJ4QDrDagadgl23AS"
+######### GITLAB_TOKEN_SARENJITH_GMAIL="glpat-JDFL-eDdjgdPrdaMerx4Xhfz2T8w"
+######### GITHUB_TOKEN_SARENJITH_GMAIL="github_pat_13245jadsfYlager_Vasefadfglkagadg-a34k3gJ4QDrDagadgl23AS"
 
 source "./tokens.conf" ##now all the rows are stored in source.
 
-GITLAB_TOKEN_VAR="GITHUB_TOKEN_Ox218"   ##GITLAB_TOKEN_VAR stores string "GITHUB_TOKEN_Ox218"
+GITLAB_TOKEN_VAR="GITLAB_TOKEN_SARENJITH_GMAIL"   ##GITLAB_TOKEN_VAR stores string "GITLAB_TOKEN_SARENJITH_GMAIL"
 
-GITLAB_TOKEN="${!GITLAB_TOKEN_VAR}" #indirect refence; get teh value of GITHUB_TOKEN_Ox218 from tokens.conf
+GITLAB_TOKEN="${!GITLAB_TOKEN_VAR}" #indirect refence; get teh value of GITLAB_TOKEN_SARENJITH_GMAIL from tokens.conf
 
 if [[ -z "$GITLAB_TOKEN" ]]; then
 	echo "Error: Token is not set in tokens.conf.  Exiting"
@@ -41,15 +42,15 @@ fi
 #echo "GitHub token: $GITHUB_TOKEN"
 ##---------------------------------------------------------------------------------------------------------
 
-GITLAB_URL="https://gitlab.com/"
+GITLAB_URL="https://YOUR-GITLAB-SERVER/"
 GITLAB_USER="sa.renjith@gmail.com"
 
-GROUP_PATH="retail/clients"
+GROUP_PATH="PATH/To/GITHUB/REPOSITORY"
 VISIBILITY="private" #can be public or internal.
 DEFAULT_BRANCH="main"
 
 
-REPO_LIST_FILE="local_repo_list.txt"
+REPO_LIST_FILE="folderList.txt"
 if [[ ! -f "$REPO_LIST_FILE" ]]; then
 	echo "Error: File `$REPO_LIST_FILE` not found!"
 	exit 1
@@ -66,6 +67,7 @@ while IFS= read -r local_repo_folder; do
 	LOCAL_REPO_PATH="$local_repo_folder"
 	DESCRIPTION="Replacement project created svn repo: $local_repo_folder"
 
+
 	#get namespace id for the subgroup
 	echo  "Fetching namespace id for $GROUP_PATH"
 
@@ -74,7 +76,8 @@ while IFS= read -r local_repo_folder; do
 		echo "Error: namespace id not found for $GROUP_PATH.  Exiting."
 		exit 1
 	fi
-	#echo "Namespace id: $NAMESPACE_ID"
+	echo "Namespace id: $NAMESPACE_ID"
+
 
 	#create repo.
 	echo "Creating remote repository $PROJECT_NAME"
@@ -97,11 +100,16 @@ while IFS= read -r local_repo_folder; do
 	#echo "press enter key to continue..."
 	#read -n 1 -s -r #wait for a keypress
 
-	##Unprotect the branch
-	#curl -s --request DELETE --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
-	#	"$GITLAB_URL/api/v4/projects/$REMOTE_PROJECT_ID/protected_branches/$DEFAULT_BRANCH"
+	#echo "Turning OFF push rules - so .pem files can be uploaded..."
+	#PROJECT_RESPONSE=$(curl --request PUT --header "PRIVATE-TOKEN: $GITLAB_TOKEN"\
+	#	--data "prevent_secrets=false" "$GITLAB_URL/api/v4/projects/$REMOTE_PROJECT_ID/push_rule")
+	#echo "Push rules are turned OFF"
 	
-	#echo "Branch '$DEFAULT_BRANCH' is unprotected"
+	#echo "Unprotecting default branch $DEFAULT_BRANCH"
+	#PROJECT_RESPONSE=$(curl --request DELETE --header "PRIVATE-TOKEN: $GITLAB_TOKEN"\
+	#	"$GITLAB_URL/api/v4/projects/$REMOTE_PROJECT_ID/protected_branches/$DEFAULT_BRANCH")
+	#echo "$DEFAULT_BRANCH branch is now unprotected"
+
 
 	cd "$LOCAL_REPO_PATH" || { echo "Error: Local repository path not found.  Exiting"; exit 1; }
 	echo "$(pwd)"

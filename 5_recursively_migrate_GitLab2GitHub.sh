@@ -1,13 +1,13 @@
 #!/bin/bash
 
 #==========================================================================================================
-#	Script name: 	recursively_migrate_GitLab_to_GitHub.sh
+#	Script name: 	recursively_migrate_GitLab2GitHub.sh
 #	Description: 	This script creates GitHub repository from the mirror of GitLab repository.
 #
 #
 #	Developed by:	Renjith (sa.renjith@gmail.com)
 #	
-#	Usage:			./recursively_migrate_GitLab_to_GitHub.sh
+#	Usage:			./recursively_migrate_GitLab2GitHub.sh
 #	Prerequisites:	
 #					Git command line tool installed
 #					Access to GitHub and GitLab
@@ -20,18 +20,8 @@
 #	
 #==========================================================================================================
 
-##NOTE:-----------------------------------------------------------------------------------------------------
-##Ensure you have tokens.conf in your current directory and having soemthing like GITLAB_TOKEN=<your Gitlab_token>
-#####Example:
-#########GITLAB_TOKEN_0x218="glpat-JDFL-eDdjgdPrdaMerx4Xhfz2T8w"
-######### GITHUB_TOKEN_0x218="github_pat_13245jadsfYlager_Vasefadfglkagadg-a34k3gJ4QDrDagadgl23AS"
-
 source "./tokens.conf" ##now all the rows are stored in source.
-
-#GITLAB_TOKEN_VAR="GITLAB_TOKEN_0x218"   ##GITLAB_TOKEN_VAR stores string "GITLAB_TOKEN_0x218"
-GITHUB_TOKEN_VAR="GITHUB_TOKEN_0x218_MYORG1" 
-
-#GITLAB_TOKEN="${!GITLAB_TOKEN_VAR}" #indirect refence; get teh value of GITLAB_TOKEN_0x218 from tokens.conf
+GITHUB_TOKEN_VAR="GITLAB_TOKEN_SARENJITH_GMAIL" 
 GITHUB_TOKEN="${!GITHUB_TOKEN_VAR}"
 
 if [[ -z "$GITHUB_TOKEN" ]]; then
@@ -43,13 +33,13 @@ fi
 #echo "GitHub token: $GITHUB_TOKEN"
 ##---------------------------------------------------------------------------------------------------------
 
-GITHUB_ORG="MyTest1Org"
+GITHUB_ORG="YOUR-GITHUB-ORGANIZATION-NAME"
 GITHUB_API="https://api.github.com/orgs/${GITHUB_ORG}/repos"
 
 ##---------------------------------------------------------------------------------------------------------
 
 INPUT_FILE="recursively_migrate_GitLab_URLs.txt"
-YAML_FILE_NAME="testConf.yaml"
+
 while IFS= read -r GITLAB_REPO || [[ -n "$GITLAB_REPO" ]]; do
 	#echo "Line read $GITLAB_REPO"
 	SOURCE_PROJECT_NAME=$(basename "$GITLAB_REPO")
@@ -57,11 +47,12 @@ while IFS= read -r GITLAB_REPO || [[ -n "$GITLAB_REPO" ]]; do
 	#echo "GitLab repo name: $GITLAB_REPO"
 	
 	###GitHub project category
-	###DEST_PROJECT_NAME_CATEGORY="<solution name>-<application name>[-optional dept]-"  
-	DEST_PROJECT_NAME_CATEGORY="Toyota-Electric-poc-"
-	
-	#for uniformity replace - in repository name with _
-	TMP_DEST_PROJECT_NAME=$(echo "$SOURCE_PROJECT_NAME" | sed 's/-/_/g')
+	###DEST_PROJECT_NAME_CATEGORY="<solution name>-<application name>-"  
+	###example:DEST_PROJECT_NAME_CATEGORY="Toyota-Electric-"
+	DEST_PROJECT_NAME_CATEGORY="poc-"
+
+	#for uniformity replace - and space in repository name with _
+	TMP_DEST_PROJECT_NAME=$(echo "$SVN_FOLDER_NAME" | sed 's/[- ]/_/g')
 
 	#build GitHub repository name
 	DEST_PROJECT_NAME="${DEST_PROJECT_NAME_CATEGORY}${TMP_DEST_PROJECT_NAME}"
@@ -103,8 +94,8 @@ while IFS= read -r GITLAB_REPO || [[ -n "$GITLAB_REPO" ]]; do
 	if echo "$CREATE_REPO_RESPONSE" | grep -q '"id":'; then
     	echo "GitHub repository created successfully."
 	else
-    	echo "Failed to create GitHub repository. Response: $CREATE_REPO_RESPONSE"
-   		exit 1
+     	echo "Failed to create GitHub repository. Response: $CREATE_REPO_RESPONSE"
+   	 	exit 1
 	fi
 
 	echo "Remove gitlab remote reference"
@@ -113,17 +104,16 @@ while IFS= read -r GITLAB_REPO || [[ -n "$GITLAB_REPO" ]]; do
 	echo "Creating yaml file in main branch"
 	git checkout main
 
-cat <<EOL > $YAML_FILE_NAME
-version:1
-account:
-    -id: App1234
-    -oId: oc354
-component:code
+cat <<EOL > vitals.yaml
+version: 2
+accounts:
+    -id: Appid_13592
+componentType: code
 EOL
 
 	echo "Committing the yaml file"
-	git add $YAML_FILE_NAME
-	git commit -m "Created $YAML_FILE_NAME file"
+	git add vitals.yaml
+	git commit -m "Created vitals.yaml file"
 
 	# Add GitHub as a remote repository
 	echo "Link GitHub remote repository to origin"
@@ -137,17 +127,17 @@ EOL
 	done
 
 	echo "Push all branches and tags to GitHub"
-	#git push origin main --force
+	##git push origin main --force
 	git push --all origin
 	git push --tags origin
 
 	# Cleanup
 	cd ..
 	echo "Deleting mirror gitlab project"
-	#renjith: rm -rf "${SOURCE_PROJECT_NAME}.git"
+	rm -rf "${SOURCE_PROJECT_NAME}.git"
 	
 	echo "Deleting mirror-feteched gitlab project"
-	#renjith: rm -rf "${SOURCE_PROJECT_NAME}_normal"
+	rm -rf "${SOURCE_PROJECT_NAME}_normal"
 	echo "------ Successfully migrated $SOURCE_PROJECT_NAME ------"
 done < "$INPUT_FILE"
 echo "================= Migration process completed! ================="

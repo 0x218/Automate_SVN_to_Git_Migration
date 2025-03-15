@@ -18,8 +18,19 @@
 #	
 #==========================================================================================================
 
+source "./tokens.conf" ##now all the rows are stored in source.
+
+GITLAB_TOKEN_VAR="GITLAB_TOKEN_SARENJITH_GMAIL"   ##GITLAB_TOKEN_VAR stores string "GITLAB_TOKEN_SARENJITH_GMAIL"
+
+GITLAB_TOKEN="${!GITLAB_TOKEN_VAR}" #indirect refence; get teh value of GITLAB_TOKEN_SARENJITH_GMAIL from tokens.conf
+
+if [[ -z "$GITLAB_TOKEN" ]]; then
+	echo "Error: Token is not set in tokens.conf.  Exiting"
+	exit 1
+fi
+#echo "Github token: $GITHUB_TOKEN"
+
 GITHUB_USERNAME="0x218"
-GITHUB_TOKEN="ENTER_YOUR_TOKEN_HERE"
 GITHUB_API="https://api.github.com/user/repos"
 OUTPUT_FILE="repos.json"
 

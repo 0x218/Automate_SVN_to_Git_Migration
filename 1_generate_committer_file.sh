@@ -17,14 +17,14 @@
 #
 #	Script input:	None
 #	Script output:	svn_committerList.txt with committers name in it.
-#			The output format will be:	userid=userid <userid@emaildomain.com>
-#	  IMPORTANT NOTE: Before running this scritp, you must replace "emaildomain.com" in this script 
+#			The output format will be:	userid=userid <userid@email-domain.com>
+#	  IMPORTANT NOTE: Before running this scritp, you must replace "email-domain.com" in this script 
 #			with your emaildomain name (ex: mycompany.com)
 #	
 #==========================================================================================================
 
 #svn repository URL
-SVN_URL="https://ENTER_YOUR_SUBVERSION_URL_HERE"
+SVN_URL="https://YOUR-SVN-SERVER"
 
 #output file with committer list
 OUTPUT_FILE="svn_committerList.txt"
@@ -40,7 +40,7 @@ echo "generating committer file"
 
 while read -r COMMITTER; do
 	if [ -n "$COMMITTER" ]; then
-		echo "$COMMITTER = $COMMITTER <${COMMITTER}@emaildomain.com>" >> "$OUTPUT_FILE"
+		echo "$COMMITTER = $COMMITTER <${COMMITTER}@email-domain.com>" >> "$OUTPUT_FILE"
 	fi
 done < "$TEMP_FILE"
 
